@@ -1,7 +1,6 @@
 import streamlit as st
 from gtts import gTTS
-import os
-import random
+from io import BytesIO
 
 # Sample database of content per genre and mood
 sample_content = {
@@ -27,24 +26,37 @@ sample_content = {
     }
 }
 
-st.title("VoiceCanvas: Personalized Audio Experience")
+st.set_page_config(page_title="VoiceCanvas AI", page_icon="🎧")
+st.title("🎧 VoiceCanvas: Personalized Audio Experience")
 
-genre = st.selectbox("Choose a Genre", list(sample_content.keys()))
-mood = st.selectbox("Set the Mood", ["Calm", "Energetic", "Focus"])
-duration = st.slider("Available Time (minutes)", 1, 15)
+genre = st.selectbox("🎼 Choose a Genre", list(sample_content.keys()))
+mood = st.selectbox("🎭 Set the Mood", ["Calm", "Energetic", "Focus"])
+duration = st.slider("🕒 Available Time (minutes)", 1, 15)
 
-if st.button("Generate Your Audio"):
-    st.markdown("**Generating personalized audio...**")
+if st.button("🎙 Generate Your Audio"):
+    st.info("Generating personalized audio... Please wait ⏳")
 
-    # Choose a sentence or generate dynamically
-    text = sample_content[genre][mood]
-    text += f" This audio is tailored for your {duration}-minute break."
+    # Approximate speech speed: ~130 words/minute
+    target_word_count = duration * 130
+    base_text = sample_content[genre][mood]
+    full_text = base_text
 
-    # Convert text to speech
-    tts = gTTS(text)
-    audio_file = "voicecanvas_output.mp3"
-    tts.save(audio_file)
+    # Repeat/extend base_text until desired word count is met
+    while len(full_text.split()) < target_word_count:
+        full_text += " " + base_text
 
-    st.audio(audio_file, format="audio/mp3")
-    st.success("Done! Hit play and enjoy your VoiceCanvas.")
+    # Add custom message
+    full_text += f" This audio was generated for a {duration}-minute focused experience."
 
+    try:
+        # Convert to speech
+        tts = gTTS(full_text, lang='en')
+        audio_bytes = BytesIO()
+        tts.write_to_fp(audio_bytes)
+        audio_bytes.seek(0)
+
+        st.audio(audio_bytes, format="audio/mp3")
+        st.success("✅ Done! Hit play and enjoy your VoiceCanvas session.")
+
+    except Exception as e:
+        st.error(f"❌ Error generating audio: {e}")
